@@ -1,0 +1,26 @@
+/**
+ * ES6 + react 简单语法
+ */
+
+import React, {Component} from 'react';
+
+const count = 0;
+
+class Test extends Component {
+    
+    state = {
+        count: count
+    };
+    
+    handleClick = () => {
+        if (this.state.count !== 10) {
+            this.setState({count: this.state.count + 1});
+        } else {
+        	this.setState({count: 1});
+        }
+    };
+    
+    render() {
+        return (<Button onclick={this.handleClick}>{this.state.count}</Button>);
+    }
+}
