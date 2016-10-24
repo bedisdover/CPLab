@@ -5,11 +5,11 @@ package type;
  * <p>
  * 边界符
  */
-enum Border {
+public enum Border {
     ;
 
     private static char[] borderList = new char[]{
-            ',', '{', '}', '\'', '\"', ';', ':', '(', ')'
+            ',', '{', '}', '\'', '\"', ';', ':', '(', ')', '.', '[', ']'
     };
 
     public static boolean isBorder(char c) {

@@ -1,26 +1,23 @@
+import java.io.IOException;
+
 /**
- * ES6 + react 简单语法
+ * Created by song on 16-10-22.
+ *
+ * 程序入口
  */
+public class Start {
 
-import React, {Component} from 'react';
+    public static void main(String[] args) throws IOException {
+        String fileName = "in.txt";
 
-const count = 0;
-
-class Test extends Component {
-    
-    state = {
-        count: count
-    };
-    
-    handleClick = () => {
-        if (this.state.count !== 10) {
-            this.setState({count: this.state.count + 1});
-        } else {
-        	this.setState({count: 1});
+        if (args.length == 1) {
+            fileName = args[0];
+        } else if (args.length > 1) {
+            System.out.println("Argument number is too much");
+            System.exit(1);
         }
-    };
-    
-    render() {
-        return (<Button onclick={this.handleClick}>{this.state.count}</Button>);
+
+        Parser.parse(fileName);
+        Parser.output();
     }
 }

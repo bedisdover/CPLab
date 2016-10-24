@@ -5,8 +5,9 @@ package type;
  * <p>
  * Token类型
  */
-enum KeyWords {
-    IMPORT, FROM, CLASS, EXTENDS, CONST, IF, ELSE, THIS, RETURN;
+public enum KeyWords {
+
+    IMPORT, PUBLIC, CLASS, EXTENDS, STATIC, VOID, THROWS, IF, ELSE, THIS, RETURN;
 
     /**
      * 判断一个字符串是否是关键字

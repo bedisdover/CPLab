@@ -18,5 +18,6 @@ public class Start {
         }
 
         Parser.parse(fileName);
+        Parser.output();
     }
 }

@@ -8,10 +8,6 @@ import org.junit.Test;
 public class ParserTest {
     @Test
     public void getToken() throws Exception {
-        StringBuilder builder = new StringBuilder("-123abc");
-
-        System.out.println(Parser.getToken(builder));
-        System.out.println(builder.toString());
     }
 
 }
