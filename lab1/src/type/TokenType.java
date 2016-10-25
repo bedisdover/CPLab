@@ -6,7 +6,7 @@ package type;
  * Token类型
  */
 public enum TokenType {
-    KEYWORDS, STRING, BORDER, ID, NUMBER, SINGLE_OPERATOR, DOUBLE_OPERATOR, COMMENTS, MULTI_COMMENTS;
+    KEYWORDS, STRING, BORDER, ID, NUMBER, OPERATOR, COMMENTS, MULTI_COMMENTS;
 
     @Override
     public String toString() {

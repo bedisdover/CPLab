@@ -1,20 +1,17 @@
-import type.Border;
-import type.KeyWords;
-import type.Operator;
-import type.TokenType;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by song on 16-10-23.
  * <p>
  * parser
  */
-class Parser {
+public class Parser {
 
-    private static List<Token> TOKEN_LIST = new ArrayList<>();
+    private static List<String> TOKEN_LIST = new ArrayList<>();
 
     /**
      * 标记是否为多行注释
@@ -55,15 +52,11 @@ class Parser {
 
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
 
-        TOKEN_LIST.forEach((token -> {
-            try {
-                writer.write(token.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
+        StringBuilder builder = new StringBuilder();
+        TOKEN_LIST.forEach((builder::append));
+        writer.write(builder.toString());
 
-        System.out.println("Parse is successful!!!");
+        System.out.println("Parsing done!!!");
         writer.flush();
         writer.close();
     }
@@ -75,29 +68,20 @@ class Parser {
      * @param content 内容
      */
     private static void parseLine(int lineNo, String content) {
-        if (content == null || content.length() == 0) {
-            return;
-        }
+        int tokenLength = parseComments(lineNo, content);
 
-        if (multi_comments) {
-            parseComments(lineNo, content);
-            return;
-        }
-
-        int i = parseString(lineNo, content);
-
-        if (i == -1) {
-            i = parseKeywords(lineNo, content);
-            if (i == -1) {
-                i = parseBorder(lineNo, content);
-                if (i == -1) {
-                    i = parseID(lineNo, content);
-                    if (i == -1) {
-                        i = parseNumber(lineNo, content);
-                        if (i == -1) {
-                            i = parseComments(lineNo, content);
-                            if (i == -1) {
-                                i = parseOperator(lineNo, content);
+        if (tokenLength == -1) {
+            tokenLength = parseString(lineNo, content);
+            if (tokenLength == -1) {
+                tokenLength = parseKeywords(lineNo, content);
+                if (tokenLength == -1) {
+                    tokenLength = parseBorder(lineNo, content);
+                    if (tokenLength == -1) {
+                        tokenLength = parseID(lineNo, content);
+                        if (tokenLength == -1) {
+                            tokenLength = parseNumber(lineNo, content);
+                            if (tokenLength == -1) {
+                                tokenLength = parseOperator(lineNo, content);
                             }
                         }
                     }
@@ -105,139 +89,92 @@ class Parser {
             }
         }
 
-        if (i != -1 && i != content.length()) {
-            parseLine(lineNo, content.substring(i).trim());
+        if (tokenLength != -1 && tokenLength != content.length()) {
+            parseLine(lineNo, content.substring(tokenLength).trim());
         }
     }
 
+    /**
+     * 解析注释，包括多行注释与单行注释
+     *
+     * @param lineNo 行号
+     * @param string 解析内容
+     * @return 解析的内容长度，若解析失败，返回-1
+     */
     private static int parseComments(int lineNo, String string) {
-        if (string.length() < 2) {
-            if (multi_comments) {
-                createToken(lineNo, TokenType.MULTI_COMMENTS, string);
-                return string.length();
-            } else {
-                return -1;
-            }
-        }
-
-        String start = string.substring(0, 2);
-
         if (multi_comments) {
-            if (start.equals("*/")) { // 多行注释结束
+            if (match(lineNo, "MULTI_COMMENTS", string, "^\\*/") != -1) {
                 multi_comments = false;
-                createToken(lineNo, TokenType.MULTI_COMMENTS, string.substring(0, 2));
-
                 return 2;
-            } else { // 多行注释内
-                createToken(lineNo, TokenType.MULTI_COMMENTS, string);
-
-                return string.length();
+            } else {
+                return match(lineNo, "MULTI_COMMENTS", string, ".*");
             }
         } else {
-            switch (start) {
-                case "/*":
-                    multi_comments = true;
-                    createToken(lineNo, TokenType.MULTI_COMMENTS, string);
+            if (match(lineNo, "MULTI_COMMENTS", string, "^/\\*.*") != -1) {
+                multi_comments = true;
 
-                    return string.length();
-                case "//":
-                    createToken(lineNo, TokenType.COMMENTS, string);
-
-                    return string.length();
-                default:
-                    return -1;
+                return string.length();
             }
 
+            return match(lineNo, "COMMENTS", string, "^//.*");
         }
     }
 
     private static int parseString(int lineNo, String string) {
-        if (string.charAt(0) == '"') {
-            int result = string.indexOf('"', 1);
-            createToken(lineNo, TokenType.STRING, string.substring(0, result + 1));
-
-            return result + 1;
-        }
-
-        return -1;
+        return match(lineNo, "STRING", string, "^\".*\"");
     }
 
     private static int parseBorder(int lineNo, String string) {
-        char firstChar = string.charAt(0);
-
-        if (Border.isBorder(firstChar)) {
-            createToken(lineNo, TokenType.BORDER, firstChar + "");
-
-            return 1;
-        }
-
-        return -1;
+        return match(lineNo, "BORDER", string, "^[,{}\'\";:().\\[\\]]");
     }
 
     private static int parseKeywords(int lineNo, String string) {
-        String firstPart = string.split(" ")[0];
-
-        if (KeyWords.isKeywords(firstPart)) {
-            createToken(lineNo, TokenType.KEYWORDS, firstPart);
-
-            return firstPart.length();
-        }
-
-        return -1;
+        return match(lineNo, "KEYWORDS", string,
+                "^((import)|(public)|(class)|(extends)|(static)|(void)|(throws)|(if)|(else)|(this)|(return))\\b");
     }
 
     private static int parseID(int lineNo, String string) {
-        char firstChar = string.charAt(0);
-
-        if (Character.isLetter(firstChar) || firstChar == '_') {
-            int i = 1;
-
-            if (string.length() > 1) {
-                while (Character.isLetterOrDigit(string.charAt(i)) || string.charAt(i) == '_') {
-                    i++;
-                }
-            }
-
-            createToken(lineNo, TokenType.ID, string.substring(0, i));
-
-            return i;
-        }
-
-
-        return -1;
+        return match(lineNo, "ID", string, "^[A-Za-z_]\\w*");
     }
 
-    private static int parseNumber(int lineNo, String string) {
-        int i = 0;
-
-        while (Character.isDigit(string.charAt(i))) {
-            i++;
-        }
-
-        if (i != 0) {
-            createToken(lineNo, TokenType.NUMBER, string.substring(0, i));
-            return i;
-        }
-
-        return -1;
+    static int parseNumber(int lineNo, String string) {
+        return match(lineNo, "NUMBER", string, "^\\d+");
     }
 
     private static int parseOperator(int lineNo, String string) {
-        Operator operator = Operator.isOperator(string);
-
-        switch (operator) {
-            case SINGLE_OPERATOR:
-                createToken(lineNo, TokenType.SINGLE_OPERATOR, string.substring(0, 1));
-                return 1;
-            case DOUBLE_OPERATOR:
-                createToken(lineNo, TokenType.DOUBLE_OPERATOR, string.substring(0, 2));
-                return 2;
-            default:
-                return -1;
-        }
+        return match(lineNo, "OPERATOR", string, "^([*=+-/><!]=?)|(&&)|(\\|\\|)");
     }
 
-    private static void createToken(int lineNo, TokenType tokenType, String value) {
-        TOKEN_LIST.add(new Token(lineNo, tokenType, value));
+    /**
+     * 匹配正则
+     * 若匹配，创建相应的token序列
+     *
+     * @param lineNo    行号
+     * @param tokenType token类型
+     * @param string    待匹配的文本
+     * @param pattern   正则表达式
+     * @return 若匹配成功，返回匹配的长度，否则返回-1
+     */
+    private static int match(int lineNo, String tokenType, String string, String pattern) {
+        Matcher matcher = Pattern.compile(pattern).matcher(string);
+
+        if (matcher.find()) {
+            createToken(lineNo, tokenType, string.substring(0, matcher.end()));
+
+            return matcher.end();
+        }
+
+        return -1;
+    }
+
+    /**
+     * 创建token
+     *
+     * @param lineNo    行号
+     * @param tokenType token类型
+     * @param value     值
+     */
+    private static void createToken(int lineNo, String tokenType, String value) {
+        TOKEN_LIST.add(String.format("%3d:  ", lineNo) + String.format("%-20s", tokenType) + value + "\n");
     }
 }

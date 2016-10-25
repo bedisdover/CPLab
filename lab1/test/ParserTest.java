@@ -8,6 +8,8 @@ import org.junit.Test;
 public class ParserTest {
     @Test
     public void getToken() throws Exception {
-    }
+        Parser.parseNumber(1, "123");
+        Parser.parseNumber(1, "awer");
 
+    }
 }
